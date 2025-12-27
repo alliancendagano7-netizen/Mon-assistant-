@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant Vocal</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
+        #status { margin: 20px; color: #555; font-style: italic; }
+        button { 
+            padding: 20px 40px; font-size: 1.2rem; cursor: pointer;
+            border: none; border-radius: 50px; background: #007bff; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:active { background: #0056b3; }
+        .result { margin-top: 30px; font-weight: bold; font-size: 1.5rem; color: #333; }
+    </style>
+</head>
+<body>
+
+    <h1>Assistant Vocal</h1>
+    <button id="start-btn">Appuyer pour parler</button>
+    <div id="status">En attente...</div>
+    <div class="result" id="result"></div>
+
+    <script>
+        // 1. Ton dictionnaire de contacts (Modifie les numéros ici)
+        const contacts = {
+            "jean": "+243000000000",
+            "maman": "+243111111111",
+            "papa": "+243222222222"
+        };
+
+        const btn = document.getElementById('start-btn');
+        const status = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+
+        // Vérification de la compatibilité
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            alert("Désolé, votre navigateur ne supporte pas la reconnaissance vocale.");
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.interimResults = false;
+
+            btn.onclick = () => {
+                recognition.start();
+                status.innerText = "Je vous écoute...";
+            };
+
+            recognition.onresult = (event) => {
+                const commande = event.results[0][0].transcript.toLowerCase();
+                resultDiv.innerText = `"${commande}"`;
+                analyserCommande(commande);
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                status.innerText = "Terminé.";
+            };
+        }
+
+        // 2. Logique de décision
+        function analyserCommande(cmd) {
+            let trouve = false;
+
+            for (let nom in contacts) {
+                if (cmd.includes(nom)) {
+                    trouve = true;
+                    if (cmd.includes("appelle") || cmd.includes("téléphone")) {
+                        parler(`J'appelle ${nom}`);
+                        window.location.href = `tel:${contacts[nom]}`;
+                    } 
+                    else if (cmd.includes("whatsapp")) {
+                        parler(`J'ouvre WhatsApp pour ${nom}`);
+                        window.location.href = `https://wa.me/${contacts[nom]}`;
+                    }
+                    else if (cmd.includes("où est") || cmd.includes("localise")) {
+                        parler(`Je cherche la position de ${nom}`);
+                        // Ici, on simule l'ouverture de Maps vers un point B (si tu as leur adresse)
+                        window.open(`https://www.google.com/maps/search/${nom}`);
+                    }
+                }
+            }
+
+            if (!trouve) {
+                parler("Désolé, je n'ai pas compris la commande ou le contact.");
+            }
+        }
+
+        // 3. Synthèse vocale (L'assistant parle)
+        function parler(message) {
+            const synthese = new SpeechSynthesisUtterance(message);
+            synthese.lang = 'fr-FR';
+            window.speechSynthesis.speak(synthese);
+        }
+    </script>
+</body>
+</html>
